@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESIFES - Sistema de Controle de Demandas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Estilos complementares para rolagem suave e customização */
+        html { scroll-behavior: smooth; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .bg-esifes { background-color: #0b2239; } /* Cor inspirada em órgãos públicos */
+    </style>
+</head>
+<body class="bg-gray-100 flex h-screen overflow-hidden text-sm">
+
+    <!-- Sidebar -->
+    <aside class="w-64 bg-esifes text-white flex flex-col h-full shadow-lg">
+        <div class="p-6 text-center border-b border-gray-600">
+            <h1 class="text-2xl font-bold tracking-wider">ESIFES</h1>
+            <p class="text-xs text-gray-300 mt-2">Controle de Demandas</p>
+        </div>
+        <nav class="flex-1 px-4 py-6 space-y-2">
+            <button onclick="switchTab('dashboard')" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-blue-800 transition text-left" id="btn-dashboard">
+                <i class="fas fa-chart-line"></i> Dashboard
+            </button>
+            <button onclick="switchTab('processos')" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-blue-800 transition text-left" id="btn-processos">
+                <i class="fas fa-folder-open"></i> Processos
+            </button>
+            <button onclick="switchTab('afastamentos')" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-blue-800 transition text-left" id="btn-afastamentos">
+                <i class="fas fa-calendar-alt"></i> Afastamentos & Férias
+            </button>
+        </nav>
+        <div class="p-4 text-xs text-gray-400 text-center border-t border-gray-600">
+            Competência Art. 3º - Suporte IFES
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col h-full overflow-hidden">
+        
+        <!-- Header -->
+        <header class="bg-white shadow px-6 py-4 flex justify-between items-center z-10">
+            <h2 class="text-xl font-semibold text-gray-700" id="page-title">Dashboard</h2>
+            <div class="text-gray-500"><i class="fas fa-user-circle text-2xl"></i></div>
+        </header>
+
+        <!-- Scrollable Content -->
+        <div class="flex-1 overflow-y-auto p-6">
+
+            <!-- TAB: DASHBOARD -->
+            <div id="dashboard" class="tab-content active">
+                <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded shadow-sm">
+                    <h3 class="text-blue-800 font-bold">Art. 3º Compete à ESIFES</h3>
+                    <p class="text-blue-700 mt-1">Suprir a ausência temporária de Procuradores-Chefes de IFES quando estes forem os únicos procuradores em efetiva atividade nas respectivas unidades.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Status de Disponibilidade -->
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-lg font-bold text-gray-700 mb-4 border-b pb-2"><i class="fas fa-users text-blue-600"></i> Status dos Procuradores Hoje</h3>
+                        <ul id="lista-disponibilidade" class="space-y-3">
+                            <!-- Preenchido via JS -->
+                        </ul>
+                    </div>
+                    
+                    <!-- Resumo Art 25 -->
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-lg font-bold text-gray-700 mb-4 border-b pb-2"><i class="fas fa-gavel text-green-600"></i> Regra de Pré-Férias (Art. 25)</h3>
+                        <ul class="list-disc pl-5 space-y-2 text-gray-600">
+                            <li><strong>Até 10 dias:</strong> Suspensão 2 dias úteis antes.</li>
+                            <li><strong>De 11 a 20 dias:</strong> Suspensão 3 dias úteis antes.</li>
+                            <li><strong>De 21 a 30 dias:</strong> Suspensão 4 dias úteis antes.</li>
+                        </ul>
+                        <p class="mt-4 text-xs text-gray-500 bg-gray-100 p-2 rounded">O sistema calcula o período de pré-férias automaticamente ao registrar um afastamento do tipo "F" (Férias), pulando finais de semana.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: PROCESSOS -->
+            <div id="processos" class="tab-content">
+                <div class="bg-white p-6 rounded-lg shadow mb-6">
+                    <h3 class="text-lg font-bold text-gray-700 mb-4">Novo Registro de Processo</h3>
+                    <form id="form-processo" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div><label class="block text-gray-600">Processo</label><input type="text" id="proc-numero" required class="w-full border rounded p-2"></div>
+                        <div><label class="block text-gray-600">Unidade de Origem</label><input type="text" id="proc-unidade" required class="w-full border rounded p-2"></div>
+                        <div><label class="block text-gray-600">Data Recebimento</label><input type="date" id="proc-datarec" required class="w-full border rounded p-2"></div>
+                        <div><label class="block text-gray-600">Data Devolução</label><input type="date" id="proc-datadev" class="w-full border rounded p-2"></div>
+                        
+                        <div>
+                            <label class="block text-gray-600">Procurador</label>
+                            <select id="proc-procurador" required class="w-full border rounded p-2">
+                                <option value="">Selecione...</option>
+                                <!-- Preenchido via JS -->
+                            </select>
+                        </div>
+                        <div><label class="block text-gray-600">Status</label>
+                            <select id="proc-status" class="w-full border rounded p-2">
+                                <option>DISTRIBUÍDO</option>
+                                <option>EM ANÁLISE</option>
+                                <option>DEVOLVIDO</option>
+                            </select>
+                        </div>
+                        <div><label class="block text-gray-600">Núcleo</label><input type="text" id="proc-nucleo" class="w-full border rounded p-2" value="NUMF"></div>
+                        <div><label class="block text-gray-600">Tipo Manifestação</label><input type="text" id="proc-tipo" class="w-full border rounded p-2"></div>
+                        <div class="md:col-span-2"><label class="block text-gray-600">Manifestação / Parecer</label><input type="text" id="proc-manif" class="w-full border rounded p-2"></div>
+                        <div class="md:col-span-2"><label class="block text-gray-600">Justificativa Devolução</label><input type="text" id="proc-justif" class="w-full border rounded p-2"></div>
+                        <div class="md:col-span-4 flex justify-end">
+                            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"><i class="fas fa-save"></i> Salvar Processo</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow overflow-x-auto">
+                    <h3 class="text-lg font-bold text-gray-700 mb-4">Controle Geral de Processos</h3>
+                    <table class="w-full text-left border-collapse whitespace-nowrap">
+                        <thead>
+                            <tr class="bg-gray-200 text-gray-700">
+                                <th class="p-2 border">Processo</th>
+                                <th class="p-2 border">Origem</th>
+                                <th class="p-2 border">Recebimento</th>
+                                <th class="p-2 border">Devolução</th>
+                                <th class="p-2 border">Tempo (dias)</th>
+                                <th class="p-2 border">Procurador</th>
+                                <th class="p-2 border">Status</th>
+                                <th class="p-2 border">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela-processos">
+                            <!-- Preenchido via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB: AFASTAMENTOS -->
+            <div id="afastamentos" class="tab-content">
+                <div class="bg-white p-6 rounded-lg shadow mb-6">
+                    <h3 class="text-lg font-bold text-gray-700 mb-4">Registrar Afastamento / Distribuição</h3>
+                    <form id="form-afastamento" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div><label class="block text-gray-600">Procurador</label><input type="text" id="afast-nome" required placeholder="Nome do Procurador" class="w-full border rounded p-2"></div>
+                        <div>
+                            <label class="block text-gray-600">Tipo de Afastamento</label>
+                            <select id="afast-tipo" required class="w-full border rounded p-2">
+                                <option value="F">F - Férias</option>
+                                <option value="L">L - Licença</option>
+                                <option value="S">S - Subst. Coordenação</option>
+                                <option value="Fe">Fe - Feriado</option>
+                                <option value="SP">SP - Sem Procurador</option>
+                            </select>
+                        </div>
+                        <div><label class="block text-gray-600">Data Início</label><input type="date" id="afast-inicio" required class="w-full border rounded p-2"></div>
+                        <div><label class="block text-gray-600">Data Retorno</label><input type="date" id="afast-fim" required class="w-full border rounded p-2"></div>
+                        <div class="md:col-span-4 flex justify-between items-center">
+                            <p class="text-sm text-red-600 font-bold" id="aviso-preferias"></p>
+                            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"><i class="fas fa-save"></i> Salvar Afastamento</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow overflow-x-auto">
+                    <h3 class="text-lg font-bold text-gray-700 mb-4">Controle de Próximas Distribuições / Afastamentos</h3>
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-200 text-gray-700">
+                                <th class="p-2 border">Procurador</th>
+                                <th class="p-2 border text-center">Tipo</th>
+                                <th class="p-2 border">Início</th>
+                                <th class="p-2 border">Data Retorno (Volta)</th>
+                                <th class="p-2 border bg-yellow-100">Início Pré-férias (Suspensão)</th>
+                                <th class="p-2 border text-center">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela-afastamentos">
+                            <!-- Preenchido via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // ======= ESTADOS GLOBAIS =======
+        let processos = JSON.parse(localStorage.getItem('esifes_processos')) || [];
+        let afastamentos = JSON.parse(localStorage.getItem('esifes_afastamentos')) || [];
+
+        // Mock de dados iniciais baseado no prompt se estiver vazio
+        if (processos.length === 0) {
+            processos.push({ id: 1, proc: '23852.002336/2026-29', orig: 'UFCAT', datarec: '2026-04-01', datadev: '2026-04-06', procurador: 'Alexandre Brentano', status: 'DISTRIBUÍDO', manif: 'PARECER Nº 00221/2026/NUMF/ESIFES/PGF/AGU', justif: '', nucleo: 'NUMF', tipo: 'PARECER' });
+        }
+        if (afastamentos.length === 0) {
+            afastamentos.push({ id: 1, procurador: 'André Pelegrini', tipo: 'F', inicio: '2026-08-27', fim: '2026-10-01', preferias: '2026-08-27' });
+            afastamentos.push({ id: 2, procurador: 'Wagner', tipo: 'L', inicio: '2026-08-31', fim: '2026-09-25', preferias: '2026-08-31' }); // cirurgia
+            afastamentos.push({ id: 3, procurador: 'Juliana', tipo: 'F', inicio: '2026-09-22', fim: '2026-10-03', preferias: '2026-09-16' });
+            afastamentos.push({ id: 4, procurador: 'Aluisio', tipo: 'F', inicio: '2026-09-21', fim: '2026-09-25', preferias: '2026-09-17' });
+            afastamentos.push({ id: 5, procurador: 'André Bessa', tipo: 'F', inicio: '2026-10-14', fim: '2026-10-23', preferias: '2026-10-09' });
+            afastamentos.push({ id: 6, procurador: 'Fausto', tipo: 'F', inicio: '2026-10-19', fim: '2026-10-23', preferias: '2026-10-15' });
+            salvarDados();
+        }
+
+        // ======= FUNÇÕES DE NAVEGAÇÃO =======
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            
+            const titles = { 'dashboard': 'Dashboard', 'processos': 'Gestão de Processos', 'afastamentos': 'Controle de Afastamentos' };
+            document.getElementById('page-title').innerText = titles[tabId];
+            
+            if(tabId === 'dashboard') renderDashboard();
+            if(tabId === 'processos') renderProcessos();
+            if(tabId === 'afastamentos') renderAfastamentos();
+        }
+
+        // ======= UTILITÁRIOS DE DATA E ART. 25 =======
+        function formatDateBR(dateStr) {
+            if(!dateStr) return '';
+            const [y, m, d] = dateStr.split('-');
+            return `${d}/${m}/${y}`;
+        }
+
+        function calculaDiasDiferenca(start, end) {
+            const dt1 = new Date(start + 'T12:00:00');
+            const dt2 = new Date(end + 'T12:00:00');
+            return Math.ceil((dt2 - dt1) / (1000 * 60 * 60 * 24));
+        }
+
+        function subtraiDiasUteis(dateStr, diasUteis) {
+            let dt = new Date(dateStr + 'T12:00:00');
+            let diasSubtraidos = 0;
+            while (diasSubtraidos < diasUteis) {
+                dt.setDate(dt.getDate() - 1);
+                // 0 = Domingo, 6 = Sábado
+                if (dt.getDay() !== 0 && dt.getDay() !== 6) {
+                    diasSubtraidos++;
+                }
+            }
+            return dt.toISOString().split('T')[0];
+        }
+
+        // Lógica do Art. 25 (Cálculo de Pré-Férias)
+        function calcularPreFerias(tipo, dataInicio, dataFim) {
+            if (tipo !== 'F') return dataInicio; // Suspensão aplica-se a férias
+            
+            const diasFérias = calculaDiasDiferenca(dataInicio, dataFim) + 1;
+            let diasSuspensao = 0;
+
+            if (diasFérias <= 10) diasSuspensao = 2;
+            else if (diasFérias >= 11 && diasFérias <= 20) diasSuspensao = 3;
+            else if (diasFérias >= 21) diasSuspensao = 4; // Até 30 dias ou mais
+
+            return subtraiDiasUteis(dataInicio, diasSuspensao);
+        }
+
+        // Simula aviso dinâmico no formulário
+        document.getElementById('form-afastamento').addEventListener('change', (e) => {
+            const tipo = document.getElementById('afast-tipo').value;
+            const inicio = document.getElementById('afast-inicio').value;
+            const fim = document.getElementById('afast-fim').value;
+            const aviso = document.getElementById('aviso-preferias');
+
+            if (tipo === 'F' && inicio && fim) {
+                const pre = calcularPreFerias(tipo, inicio, fim);
+                aviso.innerText = `Segundo Art. 25, a distribuição será suspensa a partir de: ${formatDateBR(pre)}`;
+            } else {
+                aviso.innerText = '';
+            }
+        });
+
+        // ======= LÓGICA DE SALVAMENTO (CRUD) =======
+        function salvarDados() {
+            localStorage.setItem('esifes_processos', JSON.stringify(processos));
+            localStorage.setItem('esifes_afastamentos', JSON.stringify(afastamentos));
+        }
+
+        document.getElementById('form-processo').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const datarec = document.getElementById('proc-datarec').value;
+            const datadev = document.getElementById('proc-datadev').value;
+            
+            const proc = {
+                id: Date.now(),
+                proc: document.getElementById('proc-numero').value,
+                orig: document.getElementById('proc-unidade').value,
+                datarec: datarec,
+                datadev: datadev,
+                tempo: datadev ? calculaDiasDiferenca(datarec, datadev) : 'Pendente',
+                procurador: document.getElementById('proc-procurador').value,
+                status: document.getElementById('proc-status').value,
+                nucleo: document.getElementById('proc-nucleo').value,
+                tipo: document.getElementById('proc-tipo').value,
+                manif: document.getElementById('proc-manif').value,
+                justif: document.getElementById('proc-justif').value
+            };
+            processos.push(proc);
+            salvarDados();
+            this.reset();
+            renderProcessos();
+            alert('Processo salvo com sucesso!');
+        });
+
+        document.getElementById('form-afastamento').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const tipo = document.getElementById('afast-tipo').value;
+            const inicio = document.getElementById('afast-inicio').value;
+            const fim = document.getElementById('afast-fim').value;
+            
+            const af = {
+                id: Date.now(),
+                procurador: document.getElementById('afast-nome').value,
+                tipo: tipo,
+                inicio: inicio,
+                fim: fim,
+                preferias: calcularPreFerias(tipo, inicio, fim)
+            };
+            afastamentos.push(af);
+            salvarDados();
+            this.reset();
+            document.getElementById('aviso-preferias').innerText = '';
+            renderAfastamentos();
+            alert('Afastamento salvo com sucesso!');
+        });
+
+        function deletarProcesso(id) {
+            if(confirm('Tem certeza?')) {
+                processos = processos.filter(p => p.id !== id);
+                salvarDados(); renderProcessos();
+            }
+        }
+
+        function deletarAfastamento(id) {
+            if(confirm('Tem certeza?')) {
+                afastamentos = afastamentos.filter(a => a.id !== id);
+                salvarDados(); renderAfastamentos();
+            }
+        }
+
+        // ======= RENDERIZAÇÃO NA TELA =======
+        function renderProcessos() {
+            const tbody = document.getElementById('tabela-processos');
+            tbody.innerHTML = '';
+            processos.forEach(p => {
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="p-2 font-semibold">${p.proc}</td>
+                        <td class="p-2">${p.orig}</td>
+                        <td class="p-2">${formatDateBR(p.datarec)}</td>
+                        <td class="p-2">${formatDateBR(p.datadev) || '-'}</td>
+                        <td class="p-2">${p.tempo || '-'}</td>
+                        <td class="p-2 text-blue-700">${p.procurador}</td>
+                        <td class="p-2"><span class="bg-gray-200 px-2 py-1 rounded text-xs">${p.status}</span></td>
+                        <td class="p-2">
+                            <button onclick="deletarProcesso(${p.id})" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+            atualizaSelectProcuradores();
+        }
+
+        function renderAfastamentos() {
+            const tbody = document.getElementById('tabela-afastamentos');
+            tbody.innerHTML = '';
+            
+            // Ordenar por data de inicio
+            const sorted = [...afastamentos].sort((a, b) => new Date(a.inicio) - new Date(b.inicio));
+
+            sorted.forEach(a => {
+                let badgeClass = 'bg-gray-200 text-gray-800';
+                if(a.tipo === 'F') badgeClass = 'bg-green-100 text-green-800 font-bold';
+                if(a.tipo === 'L') badgeClass = 'bg-red-100 text-red-800 font-bold';
+                
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="p-2 font-bold">${a.procurador}</td>
+                        <td class="p-2 text-center"><span class="${badgeClass} px-2 py-1 rounded text-xs">${a.tipo}</span></td>
+                        <td class="p-2">${formatDateBR(a.inicio)}</td>
+                        <td class="p-2 font-bold text-blue-700">${formatDateBR(a.fim)}</td>
+                        <td class="p-2 bg-yellow-50 text-orange-700 font-semibold">${formatDateBR(a.preferias)}</td>
+                        <td class="p-2 text-center">
+                            <button onclick="deletarAfastamento(${a.id})" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+            atualizaSelectProcuradores();
+        }
+
+        function atualizaSelectProcuradores() {
+            // Extrai lista única de nomes baseada nos afastamentos e processos
+            const nomes = new Set();
+            afastamentos.forEach(a => nomes.add(a.procurador));
+            processos.forEach(p => nomes.add(p.procurador));
+            nomes.add('Alexandre Brentano'); // Hardcoded do prompt
+            nomes.add('Maíra');
+            nomes.add('Maiza');
+            nomes.add('Ceilânia');
+            nomes.add('Rogerio');
+
+            const select = document.getElementById('proc-procurador');
+            select.innerHTML = '<option value="">Selecione...</option>';
+            [...nomes].sort().forEach(n => {
+                select.innerHTML += `<option value="${n}">${n}</option>`;
+            });
+        }
+
+        function renderDashboard() {
+            const lista = document.getElementById('lista-disponibilidade');
+            lista.innerHTML = '';
+            
+            const hojeIso = new Date().toISOString().split('T')[0]; // Data de hoje (para teste pode mudar)
+            
+            // Pega todos os nomes únicos
+            const nomes = new Set();
+            afastamentos.forEach(a => nomes.add(a.procurador));
+            
+            // Verifica status de cada um
+            [...nomes].forEach(nome => {
+                // Pega o afastamento ativo no momento (baseado na data de pré-férias até o fim)
+                const afAtual = afastamentos.find(a => a.procurador === nome && a.preferias <= hojeIso && a.fim >= hojeIso);
+                
+                if (afAtual) {
+                    let status = (afAtual.inicio > hojeIso) ? `Em Pré-férias/Suspensão (Volta ${formatDateBR(afAtual.fim)})` : `Afastado - Tipo ${afAtual.tipo} (Volta ${formatDateBR(afAtual.fim)})`;
+                    lista.innerHTML += `
+                        <li class="flex items-center justify-between p-3 bg-red-50 rounded border-l-4 border-red-500">
+                            <span class="font-bold text-gray-700">${nome}</span>
+                            <span class="text-sm text-red-600 font-semibold">${status}</span>
+                        </li>
+                    `;
+                } else {
+                    lista.innerHTML += `
+                        <li class="flex items-center justify-between p-3 bg-green-50 rounded border-l-4 border-green-500">
+                            <span class="font-bold text-gray-700">${nome}</span>
+                            <span class="text-sm text-green-600 font-semibold">Disponível para Distribuição</span>
+                        </li>
+                    `;
+                }
+            });
+        }
+
+        // ======= INICIALIZAÇÃO =======
+        switchTab('dashboard'); // Aba padrão
+        renderProcessos();
+        renderAfastamentos();
+
+    </script>
+</body>
+</html>
